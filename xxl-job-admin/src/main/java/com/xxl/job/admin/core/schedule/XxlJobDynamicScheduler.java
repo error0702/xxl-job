@@ -37,26 +37,36 @@ public final class XxlJobDynamicScheduler implements ApplicationContextAware {
 
     // ---------------------- param ----------------------
 
-    // scheduler
+    /**
+     * scheduler
+     */
     private static Scheduler scheduler;
     public void setScheduler(Scheduler scheduler) {
 		XxlJobDynamicScheduler.scheduler = scheduler;
 	}
 
-	// accessToken
+    /**
+     * accessToken
+     */
     private static String accessToken;
     public void setAccessToken(String accessToken) {
-        this.accessToken = accessToken;
+        XxlJobDynamicScheduler.accessToken = accessToken;
     }
 
-    // dao
+    /**
+     * dao
+     */
     public static XxlJobLogDao xxlJobLogDao;
     public static XxlJobInfoDao xxlJobInfoDao;
     public static XxlJobRegistryDao xxlJobRegistryDao;
     public static XxlJobGroupDao xxlJobGroupDao;
     public static AdminBiz adminBiz;
 
-    // ---------------------- applicationContext ----------------------
+    /**
+     * ---------------------- applicationContext ----------------------
+     * @param applicationContext
+     * @throws BeansException
+     */
     @Override
 	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		XxlJobDynamicScheduler.xxlJobLogDao = applicationContext.getBean(XxlJobLogDao.class);
@@ -66,7 +76,10 @@ public final class XxlJobDynamicScheduler implements ApplicationContextAware {
         XxlJobDynamicScheduler.adminBiz = applicationContext.getBean(AdminBiz.class);
 	}
 
-    // ---------------------- init + destroy ----------------------
+    /**
+     * ---------------------- init + destroy ----------------------
+     * @throws Exception
+     */
     public void init() throws Exception {
         // admin registry monitor run
         JobRegistryMonitorHelper.getInstance().start();
@@ -100,7 +113,9 @@ public final class XxlJobDynamicScheduler implements ApplicationContextAware {
         JobFailMonitorHelper.getInstance().toStop();
     }
 
-    // ---------------------- executor-client ----------------------
+    /**
+     * ---------------------- executor-client ----------------------
+     */
     private static ConcurrentHashMap<String, ExecutorBiz> executorBizRepository = new ConcurrentHashMap<String, ExecutorBiz>();
     public static ExecutorBiz getExecutorBiz(String address) throws Exception {
         // valid
@@ -195,17 +210,16 @@ public final class XxlJobDynamicScheduler implements ApplicationContextAware {
         CronScheduleBuilder cronScheduleBuilder = CronScheduleBuilder.cronSchedule(cronExpression).withMisfireHandlingInstructionDoNothing();
         CronTrigger cronTrigger = TriggerBuilder.newTrigger().withIdentity(triggerKey).withSchedule(cronScheduleBuilder).build();
 
-        // JobDetail : jobClass
-		Class<? extends Job> jobClass_ = RemoteHttpJobBean.class;   // Class.forName(jobInfo.getJobClass());
-        
-		JobDetail jobDetail = JobBuilder.newJob(jobClass_).withIdentity(jobKey).build();
-        /*if (jobInfo.getJobData()!=null) {
-        	JobDataMap jobDataMap = jobDetail.getJobDataMap();
-        	jobDataMap.putAll(JacksonUtil.readValue(jobInfo.getJobData(), Map.class));	
-        	// JobExecutionContext context.getMergedJobDataMap().get("mailGuid");
-		}*/
-        
+        /// JobDetail : jobClass  // Class.forName(jobInfo.getJobClass());
+        Class<? extends Job> jobClass = RemoteHttpJobBean.class;
+		JobDetail jobDetail = JobBuilder.newJob(jobClass).withIdentity(jobKey).build();
+///        if (jobInfo.getJobData()!=null) {
+//        	JobDataMap jobDataMap = jobDetail.getJobDataMap();
+//        	jobDataMap.putAll(JacksonUtil.readValue(jobInfo.getJobData(), Map.class));
+//        	/// JobExecutionContext context.getMergedJobDataMap().get("mailGuid");
+//		}/**/
         // schedule : jobDetail + cronTrigger
+
         Date date = scheduler.scheduleJob(jobDetail, cronTrigger);
 
         logger.info(">>>>>>>>>>> addJob success, jobDetail:{}, cronTrigger:{}, date:{}", jobDetail, cronTrigger, date);
@@ -280,7 +294,7 @@ public final class XxlJobDynamicScheduler implements ApplicationContextAware {
     public static boolean removeJob(String jobName, String jobGroup) throws SchedulerException {
     	// TriggerKey : name + group
         TriggerKey triggerKey = TriggerKey.triggerKey(jobName, jobGroup);
-        boolean result = false;
+        boolean result;
         if (checkExists(jobName, jobGroup)) {
             result = scheduler.unscheduleJob(triggerKey);
             logger.info(">>>>>>>>>>> removeJob, triggerKey:{}, result [{}]", triggerKey, result);
